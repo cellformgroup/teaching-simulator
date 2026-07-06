@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cellform Teaching Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ═══ SCENARIOS ═══════════════════════════════════════════════════════════
+   Format: each scenario is a list of steps. A step is either
+     - a decision:  { id, prompt, options: [{label, next}] }
+     - feedback:    { id, type: "feedback", quality, text, lesson,
+                      prompt?, options? }   ← no prompt/options = ending
+   quality: great | good | mixed | risky (see QUALITY below).
+   Content comes from real teaching situations only. Calm copy.
+══════════════════════════════════════════════════════════════════════════ */
+
+const SCENARIOS = {
+  "summer-camp": {
+    title: "Summer Camp Survival",
+    scenarios: [
+      {
+        id: "post-lunch-crash",
+        title: "The Post-Lunch Crash",
+        setup: "It's 1:15 PM on Day 2 of summer camp. The group just came back from lunch — it's 31°C outside. You have a Scratch animation project planned that requires focused screen time. Three kids are visibly droopy, one is bouncing off the walls after too much sugar, and two are arguing about something that happened during break. You have 90 minutes until the next break.",
+        ageGroup: "8–10 year olds",
+        steps: [
+          {
+            id: "step1",
+            prompt: "What's your first move?",
+            options: [
+              { label: "Push through — start the Scratch project as planned", next: "push-through" },
+              { label: "Quick energy game first, then start the project", next: "energy-game" },
+              { label: "Scrap the screen project, switch to a hands-on building activity", next: "scrap-plan" },
+            ],
+          },
+          {
+            id: "push-through",
+            type: "feedback",
+            quality: "risky",
+            text: "You open Scratch and start explaining the animation project. Within 10 minutes, the droopy kids are zoning out, the sugar-crash kid is clicking randomly and disrupting neighbors, and the arguing pair hasn't resolved their conflict — it's leaking into the group. You're now managing three problems at once instead of teaching.",
+            lesson: "Post-lunch is the crash zone. Starting a concentration-heavy screen activity right after lunch on a hot day is fighting your students' biology. Their bodies are digesting, their attention is bottomed out. This is when you do the LEAST concentration-dependent activity of the day.",
+            prompt: "Knowing this, what would you do differently?",
+            options: [
+              { label: "Restart with a quick physical reset game", next: "energy-game" },
+              { label: "Switch to the hands-on building option", next: "scrap-plan" },
+            ],
+          },
+          {
+            id: "energy-game",
+            type: "feedback",
+            quality: "good",
+            text: "Smart move. You call the group together: \"Engineers, before we build — quick challenge. Everyone stand up.\" You run Human Robot for 3 minutes — one kid gives movement commands, partner follows. It burns energy for the hyper kid, wakes up the droopy ones through movement, and naturally separates the arguing pair.",
+            lesson: "A 3-minute reset game is not lost time — it's an investment. You just shifted the room's energy state from scattered to focused. The sugar-crash kid burned some energy. The sleepy kids are awake. The arguing pair got redirected.",
+            prompt: "Good. The group is more alert now. But it's still hot, still post-lunch. How do you handle the Scratch project?",
+            options: [
+              { label: "Now start the Scratch project as planned", next: "modified-start" },
+              { label: "Shorten the Scratch intro, add a physical building component", next: "hybrid" },
+            ],
+          },
+          {
+            id: "scrap-plan",
+            type: "feedback",
+            quality: "mixed",
+            text: "You set out LEGO and announce a free building challenge. The droopy kids perk up — hands-on is easier when tired. The hyper kid loves it. But you've completely dropped the Scratch animation project, which was the planned learning goal for today. Tomorrow's lesson builds on it.",
+            lesson: "Adapting to energy is good, but scrapping the plan entirely creates a cascade problem — tomorrow's session assumes today's skills. The better move is usually to modify the plan rather than replace it. Can you find a hybrid that respects both the energy state and the learning goal?",
+            prompt: "How could you bring Scratch back in without losing the group?",
+            options: [
+              { label: "Use LEGO as a 15-minute warm-up, then transition to Scratch", next: "hybrid" },
+              { label: "Have kids design their animation on paper first, then build in Scratch", next: "paper-first" },
+            ],
+          },
+          {
+            id: "modified-start",
+            type: "feedback",
+            quality: "mixed",
+            text: "The game helped, but post-lunch screen fatigue is real. After 20 minutes, attention is dropping again. The reset bought you time, but didn't change the fundamental problem: this is the wrong time of day for sustained screen work.",
+            lesson: "Energy games are a tool, not a magic fix. The day-arc matters: post-lunch is for hands-on, low-concentration work. If you must do screens, keep it short and break it up with physical elements.",
+            prompt: "How would you adjust?",
+            options: [
+              { label: "Break the project into 15-minute screen sprints with movement breaks between", next: "hybrid" },
+            ],
+          },
+          {
+            id: "hybrid",
+            type: "feedback",
+            quality: "great",
+            text: "You find the sweet spot. Kids spend 10 minutes sketching their animation characters on paper (low-tech, creative, post-lunch friendly). Then 20 minutes building in Scratch. Then a quick share-and-compare where kids walk around and see each other's screens. Then another 20-minute sprint. The physical transitions between activities keep breaking up the screen fatigue.",
+            lesson: "This is the day-arc principle in action. You respected the post-lunch energy crash by starting away from screens, kept the learning goal by still doing Scratch, and used movement transitions to sustain attention across 90 minutes. The learning outcome is actually better than if you'd pushed through — kids who sketch first make more intentional animations.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "paper-first",
+            type: "feedback",
+            quality: "great",
+            text: "Excellent instinct. Kids grab paper and pencils and start designing their animation frame-by-frame. It's creative, low-tech, and post-lunch friendly. The droopy kids are drawing quietly. The hyper kid is producing an elaborate 20-frame saga. When you do move to Scratch 20 minutes later, they already know what they're building — the screen time is purposeful, not exploratory.",
+            lesson: "Paper-first is a powerful pattern: it separates the design thinking from the tool-learning. Kids who plan on paper before touching Scratch make better projects AND learn the tool faster, because they're solving one problem at a time instead of two. Plus, paper works when screens don't (battery dead, Wi-Fi down, too hot for laptops).",
+            prompt: null,
+            options: [],
+          },
+        ],
+      },
+      {
+        id: "broken-crane",
+        title: "The Broken Crane",
+        setup: "Camp, day three, 13:30, the room is warm. Your plan says: continue the gear-ratio build, the part with the tricky assembly steps. The group that comes back from lunch is not the group that left. Two kids have their heads on the table. Three are chasing each other between desks. And Ben is near tears because someone bumped his half-built crane and a piece broke off.",
+        ageGroup: "6–8 year olds",
+        steps: [
+          {
+            id: "step1",
+            prompt: "What do you do first?",
+            options: [
+              { label: "Stick to the plan. Get their attention and start the assembly steps.", next: "push-through" },
+              { label: "Swap the order: five minutes of a movement game, then the most hands-on part of the build", next: "movement" },
+              { label: "Give them free play for fifteen minutes until they settle", next: "free-play" },
+            ],
+          },
+          {
+            id: "push-through",
+            type: "feedback",
+            quality: "risky",
+            text: "You raise your voice to get attention. It works for ninety seconds. The assembly steps need fine focus that the room simply does not have at 13:30 on day three. Mistakes multiply, frustration spreads, the chasers keep leaking out of their chairs, and you spend the hour policing instead of teaching. By 14:15 you are exhausted and the cranes are worse than before lunch.",
+            lesson: "Energy is not flat across a camp day. Post-lunch is the crash zone, and the plan has to bend to the day-arc, not the other way around. Hardest material belongs in the morning golden time. And you cannot white-knuckle five eight-hour days — fighting the crash zone daily is how teachers burn out by Thursday.",
+            prompt: "How do you restart the hour?",
+            options: [
+              { label: "Countdown, then a short structured movement game, then hands-on building", next: "movement" },
+            ],
+          },
+          {
+            id: "free-play",
+            type: "feedback",
+            quality: "mixed",
+            text: "Fifteen minutes of free play in a warm room on day three does not calm this group — it accelerates it. The chasers now have permission. One of the tired kids falls asleep for real. Ben sits alone with his broken crane, which nobody addressed. Getting them back from fully unstructured is now a second battle you did not need.",
+            lesson: "Unstructured is not the same as restful. Overstimulated kids need structure with low demands, not no structure. Semi-structured beats free-form in the crash zone.",
+            prompt: "It's getting worse. What now?",
+            options: [
+              { label: "Call a do-over: gather them with a countdown and start a short movement game", next: "movement" },
+              { label: "Let it run its course and salvage what's left of the hour", next: "salvage" },
+            ],
+          },
+          {
+            id: "salvage",
+            type: "feedback",
+            quality: "risky",
+            text: "The hour drains away. Not a catastrophe — nobody got hurt — but nothing got built, and the group learned that afternoons are chaos time. Tomorrow's post-lunch slot will start from a lower baseline. Camp weeks compound, in both directions.",
+            lesson: "Multi-day groups compound. What the group learns about afternoons on Wednesday, it brings to Thursday. A do-over costs two minutes; a written-off afternoon costs the rest of the week.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "movement",
+            type: "feedback",
+            quality: "good",
+            text: "Countdown, then ninety seconds of Human Robot: one kid commands, everyone executes. The chasers burn energy inside the rules instead of against them. The tired kids move enough to wake up. Four minutes, clear ending. The room's temperature drops a notch. The group can start the hands-on part of the build — the tricky assembly steps can wait for tomorrow morning.",
+            lesson: "Movement first, with rules and a clear ending. Two to five minutes of structured energy burn buys you thirty minutes of focus.",
+            prompt: "Now: Ben, still holding the broken crane piece, lips pressed tight. What do you say?",
+            options: [
+              { label: "\"Ben, that piece broke — that's data. Want to fix it now, or sit in the reading corner for five minutes first?\"", next: "ben-choice" },
+              { label: "Quickly snap Ben's piece back on for him so the group can start", next: "ben-fixed" },
+              { label: "\"Ben, engineers don't cry over broken parts. Come on, everyone's starting.\"", next: "ben-pushed" },
+            ],
+          },
+          {
+            id: "ben-fixed",
+            type: "feedback",
+            quality: "mixed",
+            text: "You fix it in ten seconds. Ben calms down — but the near-tears were never really about the piece. He is hot, overloaded, and day-three tired. Twenty minutes later he melts down over a missing yellow brick, and this time the fix-it move has nothing to grab. You bought time and spent it.",
+            lesson: "When a kid who was fine an hour ago suddenly can't cope, read it as sensory load, not as the surface problem. Fixing the object does not regulate the kid. Offering a reset does: water, a quiet corner, permission to step out. A sensory rescue station is cheap insurance — set it up on day one, before anyone needs it.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "ben-pushed",
+            type: "feedback",
+            quality: "risky",
+            text: "Ben's face closes. The message received: being overwhelmed is against the rules here. He does not rejoin — he retreats, and now he is crying properly, which pulls three other kids' attention with him. What could have been a five-minute reset is now the room's main event.",
+            lesson: "Dysregulation is not defiance. Sudden meltdowns in previously-fine kids mean heat and sensory load, and they respond to resets, not standards. \"Engineers don't cry\" also quietly teaches the whole room what happens if they struggle — everyone is watching how you treat the kid having a hard time.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "ben-choice",
+            type: "feedback",
+            quality: "great",
+            text: "Ben picks the reading corner. Five minutes with water and a book, no audience. Meanwhile the group starts the hands-on building and testing. Ben rejoins on his own at the testing table, quietly snaps his piece back on, and nobody makes it a thing. At 14:30 the room is loud in the good way.",
+            lesson: "Respect the day-arc: hardest material in the morning, most hands-on work after lunch — same content, different order, completely different day. And offer overloaded kids a reset with choice: fix it now or cool down first. Choice returns the control that overload took away. None of this is improvisation. It is a small set of systems you set up so the afternoon runs itself.",
+            prompt: null,
+            options: [],
+          },
+        ],
+      },
+      {
+        id: "day3-wall",
+        title: "The Day 3 Wall",
+        setup: "It's Wednesday morning of camp week — Day 3. Monday and Tuesday were great: kids were excited, groups worked well, projects were progressing. But today the energy is different. Two kids say they're bored. One group that was collaborating beautifully yesterday is now bickering. A quiet kid who seemed engaged before is sitting apart, not starting. The novelty has worn off.",
+        ageGroup: "9–12 year olds",
+        steps: [
+          {
+            id: "step1",
+            prompt: "The day-3 wall is real. What's your opening move?",
+            options: [
+              { label: "Introduce a completely new surprise activity to reignite excitement", next: "surprise" },
+              { label: "Acknowledge the shift openly with the group", next: "acknowledge" },
+              { label: "Push through the planned curriculum — they'll re-engage once they start", next: "push-d3" },
+            ],
+          },
+          {
+            id: "surprise",
+            type: "feedback",
+            quality: "mixed",
+            text: "You pull out an unplanned challenge: \"Forget the project — today we're doing something totally different!\" Kids are temporarily excited. But you've just taught them that when engagement dips, the teacher will entertain them. And tomorrow is Day 4 — what surprise do you have left? You've also lost a day of project progress that feeds into Friday's showcase.",
+            lesson: "Novelty is a borrowed resource — you spend it once. The better move on Day 3 is to deepen rather than distract. The boredom often comes from the project being at the \"hard middle\" — past the excitement of starting, not yet at the satisfaction of finishing. They need to push through that, and your job is to make that push feel worth it.",
+            prompt: "How could you use the energy of Day 3 instead of fighting it?",
+            options: [
+              { label: "Acknowledge the shift and reframe what's happening", next: "acknowledge" },
+            ],
+          },
+          {
+            id: "push-d3",
+            type: "feedback",
+            quality: "risky",
+            text: "You start the day as planned. The bored kids disengage further. The bickering group escalates. The quiet kid stays quiet. By mid-morning you're spending more energy on management than teaching. The kids who ARE engaged are getting less of your attention because you're putting out fires.",
+            lesson: "\"They'll re-engage once they start\" works on Day 1 when momentum is high. On Day 3, the social and motivational dynamics have shifted. Something needs to be different — not the content necessarily, but how you frame it and what the kids' relationship to it is.",
+            prompt: "What could shift the dynamic without scrapping the plan?",
+            options: [
+              { label: "Acknowledge what's happening and give them more ownership", next: "acknowledge" },
+            ],
+          },
+          {
+            id: "acknowledge",
+            type: "feedback",
+            quality: "great",
+            text: "You gather the group: \"Real talk — by Day 3 of any project, engineers hit a wall. The exciting part is over, the hard part is here, and the cool result isn't visible yet. That's NORMAL. It happens in real engineering teams too. Here's what actual engineers do: they look at what they've built so far and ask — what's the one thing that would make this actually cool?\"\n\nThen you shift the structure: instead of following the lesson plan step by step, each group identifies ONE feature they want to add. They pitch it to you, you help them scope it, and they spend the morning making it happen.",
+            lesson: "Day 3 is the autonomy ladder in action. Days 1-2 were structured because kids needed schemas. By Day 3, they have enough knowledge to make choices — and they NEED to make choices to stay engaged. Your job shifts from instructor to consultant. The curriculum goal stays the same, but the path is now theirs.",
+            prompt: null,
+            options: [],
+          },
+        ],
+      },
+    ],
+  },
+  "classroom-mgmt": {
+    title: "Classroom Management",
+    scenarios: [
+      {
+        id: "fast-finisher",
+        title: "The Kid Who's Done in 5 Minutes",
+        setup: "You're 15 minutes into a LEGO Spike session. Most kids are still building the base model. One kid — clearly experienced — has already finished and is looking around bored. They start poking their neighbor's build. You still have 60 minutes left.",
+        ageGroup: "8–12 year olds",
+        steps: [
+          {
+            id: "step1",
+            prompt: "How do you handle the fast finisher?",
+            options: [
+              { label: "\"Great job! Can you help the others who are stuck?\"", next: "helper" },
+              { label: "\"Awesome — here's an extension challenge for you\"", next: "extension" },
+              { label: "\"Hold on, let's check your build against the spec first\"", next: "check-spec" },
+            ],
+          },
+          {
+            id: "helper",
+            type: "feedback",
+            quality: "mixed",
+            text: "The kid starts \"helping\" — which quickly becomes doing it for the other kids. Two things go wrong: the fast kid isn't learning anything new, and the slow kids are losing their chance to struggle through it (which is where the actual learning happens). Some kids also resent being \"helped\" by a peer — it highlights the speed gap.",
+            lesson: "Peer helping can work, but only with structure. An unmanaged \"help others\" instruction usually becomes \"do it for others.\" If you do use peer helpers, be specific: \"You can answer questions, but don't touch their build. Ask them: what part are you stuck on?\" Even then, this should be a short-term move, not a session-long role.",
+            prompt: "What could give this kid a challenge worthy of their level?",
+            options: [
+              { label: "Give them an extension challenge", next: "extension" },
+              { label: "Check their build quality first", next: "check-spec" },
+            ],
+          },
+          {
+            id: "check-spec",
+            type: "feedback",
+            quality: "good",
+            text: "You look at their build closely: \"Nice speed! Let's see — does it actually do what the brief said? Can it carry this weight? Does the mechanism reverse smoothly?\" Often, fast finishers have built something that looks right but skipped details. This isn't busywork — it's teaching them that engineering isn't about finishing first, it's about finishing well.",
+            lesson: "The one-sentence rule helps here: if today's session is about mechanisms (not speed), then quality-checking against the spec is the real task. \"Done\" doesn't mean \"done first\" — it means \"done right.\" This reframes the fast finisher's success from speed to quality, which is a more useful engineering habit.",
+            prompt: "Their build actually passes the check — it's solid. Now what?",
+            options: [
+              { label: "Extension challenge time", next: "extension" },
+            ],
+          },
+          {
+            id: "extension",
+            type: "feedback",
+            quality: "great",
+            text: "\"Your base build works — nice. Now: can you make it do something it wasn't designed for? Can you make it faster? Stronger? Can you add a sensor so it responds to something? You've got 45 minutes — see what you can engineer.\" The kid lights up. This is real engineering: taking something that works and pushing it further.",
+            lesson: "Always have extension challenges ready for fast finishers. The pattern is simple: base build (everyone does this) → extension 1 (make it better/different) → extension 2 (combine with another system or add complexity). Finishing early should feel like a door opening, not a wall.",
+            prompt: null,
+            options: [],
+          },
+        ],
+      },
+      {
+        id: "not-a-coding-person",
+        title: "\"I'm Not a Coding Person\"",
+        setup: "Scratch session, forty minutes in. Mia, nine, pushes the laptop away and crosses her arms. \"I can't do this. I'm not a coding person.\" Her cat sprite sits frozen on the screen. Around her, other kids are working. She is watching you.",
+        ageGroup: "8–10 year olds",
+        steps: [
+          {
+            id: "step1",
+            prompt: "What do you say?",
+            options: [
+              { label: "\"Yes you can. You're doing great.\"", next: "dismissed" },
+              { label: "\"You can't do it yet. Which part is stuck?\"", next: "yet" },
+              { label: "\"Take a break. We'll come back to it in a bit.\"", next: "break-first" },
+            ],
+          },
+          {
+            id: "dismissed",
+            type: "feedback",
+            quality: "risky",
+            text: "Mia shrugs. From where she sits, you just told her that her experience is wrong. She was not doing great — that is exactly the problem. She stays quiet for the rest of the session and clicks around without building anything. The wall between her and coding got a brick taller.",
+            lesson: "\"Yes you can\" dismisses what the kid is actually feeling. It sounds kind and lands as \"you're not allowed to find this hard.\" A kid saying \"I'm not a coding person\" is making an identity claim out of a stuck moment. Your job is to shrink it back down to the stuck moment.",
+            prompt: "What would reach her instead?",
+            options: [
+              { label: "\"You can't do it yet. Which part is stuck?\"", next: "yet" },
+            ],
+          },
+          {
+            id: "break-first",
+            type: "feedback",
+            quality: "mixed",
+            text: "Mia wanders off, relieved. But the break does not touch the belief. When she comes back, the frozen sprite is still there and so is \"I'm not a coding person.\" She avoids the laptop and asks if she can draw instead. The problem got postponed, not smaller.",
+            lesson: "Breaks reset energy. They do not reset beliefs. Mia's problem was not tiredness — it was a story she started telling about herself. Shrink the problem first, then a break is fine.",
+            prompt: "She's back at the table. What do you say?",
+            options: [
+              { label: "\"You can't do it yet. Which part is stuck?\"", next: "yet" },
+            ],
+          },
+          {
+            id: "yet",
+            type: "feedback",
+            quality: "good",
+            text: "Mia uncrosses her arms a little. \"The cat won't move when I press space. I did everything right.\" Now you have a real problem instead of an identity crisis. You look at her screen: she has the movement blocks, but no event block telling the cat when to start.",
+            lesson: "\"Yet\" acknowledges the difficulty and keeps the door open. \"Which part is stuck\" converts an identity claim back into a solvable problem. These require different responses, and now you're working on the solvable one.",
+            prompt: "You can see the missing block. What do you do?",
+            options: [
+              { label: "Take the mouse. \"Look, I'll show you.\" Fix it while she watches.", next: "fixed-for-her" },
+              { label: "\"Show me what you tried. Run it for me.\"", next: "show-me" },
+              { label: "\"Compare yours with the example on the board, block by block.\"", next: "board-example" },
+            ],
+          },
+          {
+            id: "fixed-for-her",
+            type: "feedback",
+            quality: "mixed",
+            text: "You drag the event block in, press space, the cat moves. Mia says \"oh.\" It works — but she watched it work. Ten minutes later she is stuck again and raises her hand instead of looking at her own blocks. She learned that stuck means wait for an adult.",
+            lesson: "Fixing it for a kid solves the sprite and trains the habit of waiting. The fastest fix is rarely the one that teaches. Novices do need direct guidance — but guidance means pointing their attention, not taking the mouse: \"What tells the cat when to start?\"",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "board-example",
+            type: "feedback",
+            quality: "good",
+            text: "Mia checks the board, spots the event block, adds it. The cat moves. Decent outcome — she fixed it herself, though by matching rather than understanding. Worth one more move: you ask \"what does that block you added actually do?\" She thinks, then says \"it tells it to start when I press space.\" There it is. She sits up: \"I did it.\"",
+            lesson: "Worked examples are real instruction — but matching isn't yet understanding. One articulation question converts the fix into knowledge.",
+            prompt: "She's beaming. What do you say?",
+            options: [
+              { label: "\"You're so smart.\"", next: "smart" },
+              { label: "\"What gave you the idea to look there?\"", next: "process-praise" },
+              { label: "\"See, I told you you could do it.\"", next: "told-you" },
+            ],
+          },
+          {
+            id: "show-me",
+            type: "feedback",
+            quality: "good",
+            text: "Mia runs it. Nothing happens. You ask: \"What tells the cat when it should start moving?\" She stares at the blocks, then grabs the events category. \"This one?\" She snaps it on, presses space. The cat moves. She sits up. \"I did it.\"",
+            lesson: "Guide attention, don't take the mouse. \"What tells the cat when to start?\" is still instruction — just aimed at her thinking instead of her screen.",
+            prompt: "She's beaming. What do you say?",
+            options: [
+              { label: "\"You're so smart.\"", next: "smart" },
+              { label: "\"What gave you the idea to look in that category?\"", next: "process-praise" },
+              { label: "\"See, I told you you could do it.\"", next: "told-you" },
+            ],
+          },
+          {
+            id: "smart",
+            type: "feedback",
+            quality: "mixed",
+            text: "Mia smiles. But the equation you just wrote on her board is: success means being smart. Next time she fails, the same equation reads: failure means being dumb. That is exactly the math that produced \"I'm not a coding person\" in the first place.",
+            lesson: "Person-praise (\"you're smart\") makes ability the explanation — and quietly makes failure mean the opposite. Praise the process, strategy, and decision-making instead: \"What gave you the idea to build it that way?\" Easy to know, hard to do consistently. Catch yourself and correct; it becomes automatic.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "told-you",
+            type: "feedback",
+            quality: "mixed",
+            text: "Mia nods, but the moment quietly belongs to you now — you called it, you were right. She learns your judgement about her is what counts, not her own read on the situation. Mild, not a disaster, but a missed chance to let her own the win.",
+            lesson: "\"I told you so\" centers the adult. The kid's success becomes evidence for your prediction, not for her competence. Better: make her articulate her own thinking. \"What gave you the idea to look there?\" turns the win into something she can reuse.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "process-praise",
+            type: "feedback",
+            quality: "great",
+            text: "Mia thinks about it. \"The cat had to know when to start. And the start things were in the events part.\" She just explained event-driven programming in her own words — and she knows she is the one who found it. Twenty minutes later she is stuck again, frowns, and starts scanning her own blocks before raising her hand. That frown is the win.",
+            lesson: "\"You can't do it yet\" plus \"which part is stuck\" shrinks an identity claim into a solvable problem. Guide attention instead of taking the mouse. Praise decisions, not smartness — making a kid articulate her own strategy is what lets her reuse it. The goal is not this sprite. It is what the kid does the next time she is stuck.",
+            prompt: null,
+            options: [],
+          },
+        ],
+      },
+      {
+        id: "six-ideas",
+        title: "The Kid With Six Ideas",
+        setup: "Robot project, thirty minutes left in the session. Theo, ten, has started over four times. Wheels, then legs, then a catapult arm, then back to wheels. His table is covered in half-assemblies. Other kids' robots are starting to drive. Theo shoves the pieces away: \"This is boring anyway.\" It is not boredom — you have watched the gap between what he imagines and what he has built grow all hour.",
+        ageGroup: "9–12 year olds",
+        steps: [
+          {
+            id: "step1",
+            prompt: "What do you say?",
+            options: [
+              { label: "\"Theo, focus. Pick one and finish it or you'll have nothing to show.\"", next: "pressure" },
+              { label: "\"I love that you have so many ideas. An engineer picks ONE, builds the core, tests it, then adds features. Which one do you want to start with?\"", next: "engineer-move" },
+              { label: "Let it go — it's his project, and finishing isn't mandatory", next: "let-go" },
+            ],
+          },
+          {
+            id: "pressure",
+            type: "feedback",
+            quality: "risky",
+            text: "\"I don't care.\" Theo slumps. The pressure confirms what the frustration was already whispering: everyone else can do this and he cannot. He spends the last half hour flicking a wheel across the table. The ideas were never the problem — the converging was, and \"focus\" is not a method, it is a demand.",
+            lesson: "A kid drowning in his own ideas does not lack discipline, he lacks a converging tool. \"This is boring\" from a kid with a full table is almost always frustration wearing a costume. The engineering design process is the tool: pick one, build the core, test, then extend — named as what real engineers do, not as a limit on him.",
+            prompt: "How would you restart this?",
+            options: [
+              { label: "Name the strength, then hand over the method: \"Engineers pick ONE, build the core first. Which one?\"", next: "engineer-move" },
+            ],
+          },
+          {
+            id: "let-go",
+            type: "feedback",
+            quality: "mixed",
+            text: "Respectful in spirit, but Theo does not experience it as freedom. He experiences another twenty minutes of the vision-execution gap hurting. At cleanup he has nothing that works, watches the other robots drive, and files the session under proof. Autonomy helps kids who are converging. Theo needed help converging first.",
+            lesson: "Stepping back works for kids who have the pieces and are working a problem. Theo's problem is the step before that: choosing. Intervene on the process, not the project — he still chooses what to build, you supply the how-to-choose.",
+            prompt: "There's still time. What do you say?",
+            options: [
+              { label: "\"An engineer picks ONE, builds the core, tests it, then adds features. Which one do you want to start with?\"", next: "engineer-move" },
+            ],
+          },
+          {
+            id: "engineer-move",
+            type: "feedback",
+            quality: "good",
+            text: "Theo looks up. \"The flamethrower one.\" Of course. There is no flamethrower in a bin of motors, wheels and LEGO. The idea he wants most is the one the materials cannot do.",
+            lesson: "Convergence is a method you hand over, not a demand. And this moment decides whether the method survives contact with his imagination.",
+            prompt: "What do you say about the flamethrower?",
+            options: [
+              { label: "\"That one's not possible with our materials. Pick a different one.\"", next: "shot-down" },
+              { label: "\"Okay — what's the core of a flamethrower? Something that spins and throws? We have a motor. Build the spinning-throwing part first.\"", next: "core-idea" },
+              { label: "\"Let's save that one for another day and do the wheels robot today.\"", next: "postponed" },
+            ],
+          },
+          {
+            id: "shot-down",
+            type: "feedback",
+            quality: "mixed",
+            text: "Technically true and completely deflating. The one idea with enough pull to get Theo through the boring middle parts just got labeled impossible. He picks the wheels robot with zero investment, assembles it half-heartedly, and is the first one at the door. The method worked, the motivation died.",
+            lesson: "Never kill the idea — translate it. The wild idea is the fuel. The skill is finding its buildable core: \"What's the core of that idea?\" keeps the kid's vision in charge while the materials set the constraints.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "postponed",
+            type: "feedback",
+            quality: "mixed",
+            text: "Theo says \"okay\" and means \"no.\" Kids hear \"another day\" accurately — it usually means never. He builds the wheels robot on autopilot, watching the clock. Not a disaster, he finishes something, but the thing he finished has none of him in it. The six ideas were the most valuable material on that table, and they went home unused.",
+            lesson: "Postponing the exciting idea trades this session's motivation for a promise nobody believes. The move that keeps the fuel: extract the buildable core of the exciting idea right now.",
+            prompt: null,
+            options: [],
+          },
+          {
+            id: "core-idea",
+            type: "feedback",
+            quality: "great",
+            text: "\"A spinner. That throws stuff.\" Theo grabs the motor. For twenty minutes the six ideas stop competing, because one of them is winning and it was his. The spinner throws a paper ball roughly one meter, which by ten-year-old standards is a triumph. At the share round he explains it as \"phase one of the flamethrower.\" Fine. That is what engineers call a roadmap.",
+            lesson: "Name the pattern with respect: many ideas is a strength. Then hand over the converging tool: one idea, core first, test, extend. Translate impossible ideas into their buildable core instead of vetoing them — the vision stays his, the physics stays real. You will meet this kid in every group. Not a diagnosis, a pattern, and it comes with a playbook.",
+            prompt: null,
+            options: [],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const MODULE_LIST = [
+  { key: "module0", label: "Module 0", title: "Organization", status: "planned" },
+  { key: "module1", label: "Module 1", title: "Before You Arrive", status: "planned" },
+  { key: "summer-camp", label: "Module 2b", title: "Summer Camp Survival", status: "ready" },
+  { key: "classroom-mgmt", label: "Module 2", title: "Classroom Management", status: "ready" },
+  { key: "module2c", label: "Module 2c", title: "Systems & Rituals", status: "planned" },
+  { key: "module3", label: "Module 3", title: "Edge Cases", status: "planned" },
+  { key: "module4", label: "Module 4", title: "Platform Modules", status: "planned" },
+  { key: "games", label: "Library", title: "Games & Activities", status: "planned" },
+];
+
+const QUALITY = {
+  great:  { label: "Strong move",    color: "#0066FF" },
+  good:   { label: "Decent move",    color: "#00AA44" },
+  mixed:  { label: "Has tradeoffs",  color: "#DDAA00" },
+  risky:  { label: "Risky move",     color: "#DD3333" },
+};
+
+/* Pixel sprite: tiny 8x8 wrench, encoded as box-shadows */
+const PIXEL_WRENCH = Array.from({length: 8}, (_, r) =>
+  Array.from({length: 8}, (_, c) => {
+    const on = [
+      [0,5],[0,6],
+      [1,4],[1,5],[1,6],[1,7],
+      [2,4],[2,5],
+      [3,3],[3,4],
+      [4,2],[4,3],
+      [5,1],[5,2],
+      [6,0],[6,1],[6,2],[6,3],
+      [7,0],[7,1],[7,2],[7,3],
+    ].some(([pr,pc]) => pr === r && pc === c);
+    return on ? `${c*3}px ${r*3}px 0 0 currentColor` : null;
+  }).filter(Boolean)
+).flat().join(", ");
+
+function PixelIcon({ style }) {
+  return (
+    <span style={{
+      display: "inline-block",
+      width: 24, height: 24,
+      overflow: "hidden",
+      position: "relative",
+      ...style,
+    }}>
+      <span style={{
+        position: "absolute",
+        top: 0, left: 0,
+        width: 3, height: 3,
+        boxShadow: PIXEL_WRENCH,
+        color: "currentColor",
+      }} />
+    </span>
+  );
+}
+
+/* Small pixel cursor blink animation for active states */
+function PixelCursor() {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const i = setInterval(() => setOn(v => !v), 530);
+    return () => clearInterval(i);
+  }, []);
+  return (
+    <span style={{
+      display: "inline-block",
+      width: 8, height: 14,
+      background: on ? "#0066FF" : "transparent",
+      marginLeft: 4,
+      verticalAlign: "text-bottom",
+      transition: "background 0.05s",
+    }} />
+  );
+}
+
+function App() {
+  const [view, setView] = useState("home"); // home | module | scenario
+  const [activeModuleKey, setActiveModuleKey] = useState(null);
+  const [activeScenario, setActiveScenario] = useState(null);
+  const [stepId, setStepId] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  const goHome = () => { setView("home"); setActiveModuleKey(null); setActiveScenario(null); setStepId(null); setHistory([]); };
+  const openModule = (key) => { if (SCENARIOS[key]) { setView("module"); setActiveModuleKey(key); setActiveScenario(null); } };
+  const startScenario = (sc) => { setActiveScenario(sc); setStepId("step1"); setHistory([]); setView("scenario"); };
+  const choose = (opt) => {
+    const next = activeScenario.steps.find(s => s.id === opt.next);
+    if (!next) return;
+    setHistory(h => [...h, opt.label]);
+    setStepId(opt.next);
+  };
+  const retry = () => { setStepId("step1"); setHistory([]); };
+  const backToModule = () => { setView("module"); setActiveScenario(null); setStepId(null); setHistory([]); };
+
+  const step = activeScenario?.steps.find(s => s.id === stepId);
+  const q = step?.quality ? QUALITY[step.quality] : null;
+  const moduleData = SCENARIOS[activeModuleKey];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#FFFFFF", color: "#1a1a1a", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+      <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pixelFadeIn {
+          0% { opacity: 0; clip-path: inset(0 100% 0 0); }
+          100% { opacity: 1; clip-path: inset(0 0 0 0); }
+        }
+
+        .mono { font-family: 'Courier New', Courier, monospace; }
+        .animate-in { animation: slideIn 0.25s ease-out; }
+
+        .option-btn {
+          display: block;
+          width: 100%;
+          text-align: left;
+          background: #FFFFFF;
+          border: 2px solid #E0E0E0;
+          border-radius: 4px;
+          padding: 16px 20px;
+          color: #1a1a1a;
+          font-family: Georgia, serif;
+          font-size: 14px;
+          line-height: 1.5;
+          cursor: pointer;
+          transition: border-color 0.1s, background 0.1s;
+        }
+        .option-btn:hover { border-color: #0066FF; background: #F0F4FF; }
+
+        .nav-link {
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 13px;
+          color: #999;
+          cursor: pointer;
+          background: none;
+          border: none;
+          padding: 0;
+          text-decoration: none;
+        }
+        .nav-link:hover { color: #0066FF; }
+
+        .list-item {
+          padding: 16px 0;
+          border-bottom: 1px solid #F0F0F0;
+          cursor: pointer;
+          transition: padding-left 0.15s;
+        }
+        .list-item:hover { padding-left: 8px; }
+        .list-item.disabled { opacity: 0.3; cursor: default; }
+        .list-item.disabled:hover { padding-left: 0; }
+
+        .scenario-item {
+          padding: 20px 0;
+          border-bottom: 1px solid #F0F0F0;
+          cursor: pointer;
+          transition: padding-left 0.15s;
+        }
+        .scenario-item:hover { padding-left: 8px; }
+      `}</style>
+
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "48px 24px 80px" }}>
+
+        {/* HEADER — always visible */}
+        <header style={{ marginBottom: 48, borderBottom: "2px solid #1a1a1a", paddingBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+            <PixelIcon style={{ color: "#0066FF" }} />
+            <span className="mono" style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999" }}>
+              Cellform
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <h1 onClick={goHome} style={{ fontSize: 24, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.02em" }}>
+              Teaching Simulator
+            </h1>
+            <PixelCursor />
+          </div>
+        </header>
+
+        {/* HOME */}
+        {view === "home" && (
+          <div className="animate-in">
+            <p style={{ fontSize: 15, color: "#666", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
+              Practice real teaching scenarios before they happen. Pick a module, make decisions, see what works and why.
+            </p>
+
+            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 12 }}>
+              Modules
+            </div>
+
+            <div>
+              {MODULE_LIST.map((mod, i) => {
+                const hasContent = !!SCENARIOS[mod.key];
+                const count = hasContent ? SCENARIOS[mod.key].scenarios.length : 0;
+                return (
+                  <div
+                    key={mod.key}
+                    className={`list-item ${!hasContent ? "disabled" : ""}`}
+                    onClick={() => hasContent && openModule(mod.key)}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <div>
+                        <span className="mono" style={{ fontSize: 12, color: "#999", marginRight: 12 }}>{mod.label}</span>
+                        <span style={{ fontSize: 15, fontWeight: 600 }}>{mod.title}</span>
+                      </div>
+                      {hasContent ? (
+                        <span className="mono" style={{ fontSize: 12, color: "#0066FF" }}>
+                          {count} scenario{count !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <span className="mono" style={{ fontSize: 12, color: "#CCC" }}>soon</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* MODULE VIEW */}
+        {view === "module" && moduleData && (
+          <div className="animate-in">
+            <button className="nav-link" onClick={goHome} style={{ marginBottom: 32 }}>
+              &lt;-- all modules
+            </button>
+
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+              {moduleData.title}
+            </h2>
+            <p style={{ fontSize: 14, color: "#666", lineHeight: 1.6, marginBottom: 32 }}>
+              Each scenario puts you in a situation and lets you decide. No right answer on the first try — that's the point.
+            </p>
+
+            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 12 }}>
+              Scenarios
+            </div>
+
+            {moduleData.scenarios.map(sc => (
+              <div key={sc.id} className="scenario-item" onClick={() => startScenario(sc)}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                  <span style={{ fontSize: 16, fontWeight: 600 }}>{sc.title}</span>
+                  <span className="mono" style={{ fontSize: 11, color: "#999", flexShrink: 0, marginLeft: 16 }}>{sc.ageGroup}</span>
+                </div>
+                <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5 }}>
+                  {sc.setup.substring(0, 100)}...
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* SCENARIO VIEW */}
+        {view === "scenario" && activeScenario && step && (
+          <div className="animate-in">
+            <button className="nav-link" onClick={backToModule} style={{ marginBottom: 32 }}>
+              &lt;-- {moduleData.title}
+            </button>
+
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{activeScenario.title}</h2>
+              <span className="mono" style={{ fontSize: 12, color: "#999" }}>{activeScenario.ageGroup}</span>
+            </div>
+
+            {/* Path history */}
+            {history.length > 0 && (
+              <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "1px solid #F0F0F0" }}>
+                <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 10 }}>
+                  Your decisions
+                </div>
+                {history.map((h, i) => (
+                  <div key={i} style={{ fontSize: 13, color: "#888", padding: "4px 0", display: "flex", gap: 8 }}>
+                    <span className="mono" style={{ color: "#CCC" }}>{String(i + 1).padStart(2, "0")}</span>
+                    <span>{h}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Setup text */}
+            {stepId === "step1" && (
+              <div style={{ marginBottom: 32, padding: 24, background: "#FAFAFA", border: "1px solid #EEE", borderRadius: 4 }}>
+                <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 10 }}>
+                  The situation
+                </div>
+                <p style={{ fontSize: 15, lineHeight: 1.75, color: "#333" }}>{activeScenario.setup}</p>
+              </div>
+            )}
+
+            {/* Feedback */}
+            {step.type === "feedback" && (
+              <div className="animate-in" style={{ marginBottom: 32 }}>
+                <div style={{
+                  padding: 24,
+                  borderLeft: `4px solid ${q?.color || "#999"}`,
+                  background: "#FAFAFA",
+                  borderRadius: "0 4px 4px 0",
+                  marginBottom: 20,
+                }}>
+                  <div className="mono" style={{ fontSize: 11, fontWeight: 500, color: q?.color || "#999", marginBottom: 12 }}>
+                    {q?.label}
+                  </div>
+                  <p style={{ fontSize: 15, lineHeight: 1.75, color: "#333", whiteSpace: "pre-line" }}>{step.text}</p>
+                </div>
+
+                {step.lesson && (
+                  <div style={{ padding: "0 0 0 28px" }}>
+                    <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#0066FF", marginBottom: 8 }}>
+                      The principle
+                    </div>
+                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "#555", whiteSpace: "pre-line" }}>{step.lesson}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Options */}
+            {step.prompt && (
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>{step.prompt}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {step.options.map((opt, i) => (
+                    <button key={i} className="option-btn" onClick={() => choose(opt)}>
+                      <span className="mono" style={{ color: "#0066FF", marginRight: 10, fontSize: 12 }}>
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* End state */}
+            {!step.prompt && step.options.length === 0 && (
+              <div style={{ paddingTop: 24, borderTop: "1px solid #EEE", marginTop: 12 }}>
+                <p className="mono" style={{ fontSize: 12, color: "#999", marginBottom: 20 }}>
+                  Scenario complete — {history.length + 1} decisions
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="option-btn" style={{ width: "auto" }} onClick={retry}>
+                    Try different choices
+                  </button>
+                  <button className="option-btn" style={{ width: "auto" }} onClick={backToModule}>
+                    Back to scenarios
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FOOTER */}
+        <footer style={{ marginTop: 80, paddingTop: 20, borderTop: "1px solid #F0F0F0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="mono" style={{ fontSize: 11, color: "#CCC" }}>Cellform — Teacher Training</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              {["#FF3333","#0066FF","#FFCC00","#FF3333","#0066FF"].map((c,i) => (
+                <span key={i} style={{ display: "inline-block", width: 6, height: 6, background: c }} />
+              ))}
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
