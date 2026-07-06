@@ -23,9 +23,13 @@ const { useState, useEffect } = React;
 ══════════════════════════════════════════════════════════════════════════ */
 
 const SCENARIOS = {
-  "summer-camp": {
-    title: "Summer Camp Survival",
-    scenarios: [
+  "simulator": {
+    title: "Simulator",
+    groups: [
+      {
+        key: "camp",
+        title: "Summer camp",
+        scenarios: [
       {
         id: "post-lunch-crash",
         title: "The Post-Lunch Crash",
@@ -260,10 +264,11 @@ const SCENARIOS = {
         ],
       },
     ],
-  },
-  "classroom-mgmt": {
-    title: "Classroom Management",
-    scenarios: [
+      },
+      {
+        key: "learning-center",
+        title: "Learning center",
+        scenarios: [
       {
         id: "fast-finisher",
         title: "The Kid Who's Done in 5 Minutes",
@@ -507,18 +512,26 @@ const SCENARIOS = {
         ],
       },
     ],
+      },
+      {
+        key: "schools",
+        title: "Schools & kindergartens",
+        scenarios: [],
+      },
+      {
+        key: "a1",
+        title: "A1 digital campus",
+        scenarios: [],
+      },
+    ],
   },
 };
 
 const MODULE_LIST = [
-  { key: "module0", label: "Module 0", title: "Organization", status: "planned" },
-  { key: "module1", label: "Module 1", title: "Before You Arrive", status: "planned" },
-  { key: "summer-camp", label: "Module 2b", title: "Summer Camp Survival", status: "ready" },
-  { key: "classroom-mgmt", label: "Module 2", title: "Classroom Management", status: "ready" },
-  { key: "module2c", label: "Module 2c", title: "Systems & Rituals", status: "planned" },
-  { key: "module3", label: "Module 3", title: "Edge Cases", status: "planned" },
-  { key: "module4", label: "Module 4", title: "Platform Modules", status: "planned" },
-  { key: "games", label: "Library", title: "Games & Activities", status: "planned" },
+  { key: "base", label: "Start here", title: "Base training", status: "planned" },
+  { key: "simulator", label: "Levels", title: "Simulator", status: "ready" },
+  { key: "map", label: "Map", title: "Where is what", status: "planned" },
+  { key: "games", label: "Library", title: "Games & Activities", url: "https://game-plattform.netlify.app" },
 ];
 
 const QUALITY = {
@@ -783,29 +796,32 @@ function App() {
         {view === "home" && (
           <div className="animate-in">
             <p style={{ fontSize: 15, color: "#666", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
-              Practice real teaching scenarios before they happen. Pick a module, make decisions, see what works and why.
+              Practice real teaching scenarios before they happen. Read a situation, decide, see what actually happens and why.
             </p>
 
             <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 12 }}>
-              Modules
+              Sections
             </div>
 
             <div>
               {MODULE_LIST.map((mod, i) => {
                 const hasContent = !!SCENARIOS[mod.key];
-                const count = hasContent ? SCENARIOS[mod.key].scenarios.length : 0;
+                const count = hasContent ? SCENARIOS[mod.key].groups.reduce((n, g) => n + g.scenarios.length, 0) : 0;
+                const active = hasContent || mod.url;
                 return (
                   <div
                     key={mod.key}
-                    className={`list-item ${!hasContent ? "disabled" : ""}`}
-                    onClick={() => hasContent && openModule(mod.key)}
+                    className={`list-item ${!active ? "disabled" : ""}`}
+                    onClick={() => mod.url ? window.open(mod.url, "_blank") : hasContent && openModule(mod.key)}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                       <div>
                         <span className="mono" style={{ fontSize: 12, color: "#999", marginRight: 12 }}>{mod.label}</span>
                         <span style={{ fontSize: 15, fontWeight: 600 }}>{mod.title}</span>
                       </div>
-                      {hasContent ? (
+                      {mod.url ? (
+                        <span className="mono" style={{ fontSize: 12, color: "#0066FF" }}>game platform &rarr;</span>
+                      ) : hasContent ? (
                         <span className="mono" style={{ fontSize: 12, color: "#0066FF" }}>
                           {count} scenario{count !== 1 ? "s" : ""}
                         </span>
@@ -824,7 +840,7 @@ function App() {
         {view === "module" && moduleData && (
           <div className="animate-in">
             <button className="nav-link" onClick={goHome} style={{ marginBottom: 32 }}>
-              &lt;-- all modules
+              &lt;-- overview
             </button>
 
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
@@ -834,19 +850,27 @@ function App() {
               Each scenario puts you in a situation and lets you decide. No right answer on the first try — that's the point.
             </p>
 
-            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 12 }}>
-              Scenarios
-            </div>
-
-            {moduleData.scenarios.map(sc => (
-              <div key={sc.id} className="scenario-item" onClick={() => startScenario(sc)}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                  <span style={{ fontSize: 16, fontWeight: 600 }}>{sc.title}</span>
-                  <span className="mono" style={{ fontSize: 11, color: "#999", flexShrink: 0, marginLeft: 16 }}>{sc.ageGroup}</span>
+            {moduleData.groups.map(g => (
+              <div key={g.key} style={{ marginBottom: 40 }}>
+                <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 12 }}>
+                  {g.title}
                 </div>
-                <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5 }}>
-                  {sc.setup.substring(0, 100)}...
-                </p>
+                {g.scenarios.length === 0 && (
+                  <p className="mono" style={{ fontSize: 12, color: "#CCC", padding: "8px 0" }}>
+                    No scenarios here yet.
+                  </p>
+                )}
+                {g.scenarios.map(sc => (
+                  <div key={sc.id} className="scenario-item" onClick={() => startScenario(sc)}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                      <span style={{ fontSize: 16, fontWeight: 600 }}>{sc.title}</span>
+                      <span className="mono" style={{ fontSize: 11, color: "#999", flexShrink: 0, marginLeft: 16 }}>{sc.ageGroup}</span>
+                    </div>
+                    <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5 }}>
+                      {sc.setup.substring(0, 100)}...
+                    </p>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
