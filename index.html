@@ -111,6 +111,20 @@ const SCENARIOS = {
       {
         id: "broken-crane",
         title: "The Broken Crane",
+        scene: {
+          caption: "Camp · Day 3 · 13:30 · warm",
+          bg: "#FFF6EC",
+          floor: "#EADFD3",
+          items: [
+            { s: "sun", right: 16, top: 12, size: 4 },
+            { s: "tableSlump", x: "6%", size: 4 },
+            { s: "runner", x: "42%", size: 4 },
+            { s: "runner", x: "52%", size: 4, bottom: 18 },
+            { s: "runner", x: "62%", size: 4 },
+            { s: "crane", x: "76%", size: 3 },
+            { s: "sadKid", x: "86%", size: 4 },
+          ],
+        },
         setup: "Camp, day three, 13:30, the room is warm. Your plan says: continue the gear-ratio build, the part with the tricky assembly steps. The group that comes back from lunch is not the group that left. Two kids have their heads on the table. Three are chasing each other between desks. And Alex is near tears because someone bumped their half-built crane and a piece broke off.",
         ageGroup: "6–8 year olds",
         steps: [
@@ -570,6 +584,97 @@ function PixelCursor() {
   );
 }
 
+/* ═══ PIXEL SCENES — composed from scenario facts, not hand-drawn per scenario.
+   A scenario declares a `scene`: caption + a list of sprite placements.
+   Sprites come from the shared library below; adding a scenario never
+   requires new artwork. Color carries meaning: red = the kid in focus,
+   yellow = heat/sun, ink and gray = everyone else. ═══ */
+
+const SCENE_PALETTE = {
+  k: "#1a1a1a", m: "#888888", f: "#CCCCCC",
+  r: "#FF3333", y: "#FFCC00", b: "#0066FF",
+};
+
+const SCENE_SPRITES = {
+  sun: [
+    "..y..",
+    ".yyy.",
+    "yyyyy",
+    ".yyy.",
+    "..y..",
+  ],
+  tableSlump: [   /* two kids, heads down on a table */
+    "...kkk.......kkk....",
+    "...kkk.......kkk....",
+    "mmmmmmmmmmmmmmmmmmmm",
+    "mmmmmmmmmmmmmmmmmmmm",
+    ".mm..............mm.",
+    ".mm..............mm.",
+    ".mm..............mm.",
+  ],
+  runner: [       /* mid-chase */
+    ".kkk...",
+    ".kkk...",
+    "..mm...",
+    ".mmmm..",
+    "m.mm.m.",
+    "..mm...",
+    ".m..m..",
+    "m....m.",
+  ],
+  sadKid: [       /* apart from the group, holding the broken piece (red) */
+    ".kkk....",
+    ".kkk....",
+    ".mmm.rr.",
+    ".mmm.rr.",
+    ".mmm....",
+    ".m.m....",
+    ".m.m....",
+    ".m.m....",
+  ],
+  crane: [        /* the half-built crane, one piece missing */
+    "....m....",
+    "....m....",
+    "....mmmm.",
+    "....m..m.",
+    "mmmmm....",
+    "m...m....",
+    "mmmmm....",
+  ],
+};
+
+function PixelArt({ rows, size = 4, style }) {
+  const shadows = [];
+  rows.forEach((row, r) => [...row].forEach((ch, c) => {
+    const col = SCENE_PALETTE[ch];
+    if (col) shadows.push(`${c * size}px ${r * size}px 0 0 ${col}`);
+  }));
+  return (
+    <span style={{ position: "absolute", width: rows[0].length * size, height: rows.length * size, ...style }}>
+      <span style={{ position: "absolute", top: 0, left: 0, width: size, height: size, boxShadow: shadows.join(", ") }} />
+    </span>
+  );
+}
+
+function Scene({ scene }) {
+  return (
+    <div style={{
+      position: "relative", height: 128, background: scene.bg || "#FAFAFA",
+      border: "1px solid #EEE", borderRadius: 4, marginBottom: 24, overflow: "hidden",
+    }}>
+      <span className="mono" style={{
+        position: "absolute", top: 10, left: 12, fontSize: 10,
+        letterSpacing: "0.15em", textTransform: "uppercase", color: "#999",
+      }}>{scene.caption}</span>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 8, borderBottom: `2px solid ${scene.floor || "#E0E0E0"}` }} />
+      {scene.items.map((it, i) => (
+        <PixelArt key={i} rows={SCENE_SPRITES[it.s]} size={it.size || 4}
+          style={{ left: it.x, right: it.right, bottom: it.top == null ? (it.bottom ?? 10) : undefined, top: it.top }} />
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const [view, setView] = useState("home"); // home | module | scenario
   const [activeModuleKey, setActiveModuleKey] = useState(null);
@@ -772,6 +877,9 @@ function App() {
                 ))}
               </div>
             )}
+
+            {/* Pixel scene — composed from scenario facts */}
+            {stepId === "step1" && activeScenario.scene && <Scene scene={activeScenario.scene} />}
 
             {/* Setup text */}
             {stepId === "step1" && (
