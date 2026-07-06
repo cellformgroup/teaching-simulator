@@ -114,7 +114,7 @@ const SCENARIOS = {
         scene: {
           caption: "Camp · Day 3 · 13:30 · warm",
           bg: "#FFF6EC",
-          floor: "#EADFD3",
+          floor: "#1a1a1a",
           items: [
             { s: "sun", right: 16, top: 12, size: 4 },
             { s: "tableSlump", x: "6%", size: 4 },
@@ -660,13 +660,13 @@ function Scene({ scene }) {
   return (
     <div style={{
       position: "relative", height: 128, background: scene.bg || "#FAFAFA",
-      border: "1px solid #EEE", borderRadius: 4, marginBottom: 24, overflow: "hidden",
+      border: "2px solid #1a1a1a", marginBottom: 24, overflow: "hidden",
     }}>
       <span className="mono" style={{
         position: "absolute", top: 10, left: 12, fontSize: 10,
         letterSpacing: "0.15em", textTransform: "uppercase", color: "#999",
       }}>{scene.caption}</span>
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 8, borderBottom: `2px solid ${scene.floor || "#E0E0E0"}` }} />
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 8, borderBottom: `2px solid ${scene.floor || "#1a1a1a"}` }} />
       {scene.items.map((it, i) => (
         <PixelArt key={i} rows={SCENE_SPRITES[it.s]} size={it.size || 4}
           style={{ left: it.x, right: it.right, bottom: it.top == null ? (it.bottom ?? 10) : undefined, top: it.top }} />
@@ -717,8 +717,7 @@ function App() {
           width: 100%;
           text-align: left;
           background: #FFFFFF;
-          border: 2px solid #E0E0E0;
-          border-radius: 4px;
+          border: 2px solid #1a1a1a;
           padding: 16px 20px;
           color: #1a1a1a;
           font-family: Georgia, serif;
@@ -727,7 +726,8 @@ function App() {
           cursor: pointer;
           transition: border-color 0.1s, background 0.1s;
         }
-        .option-btn:hover { border-color: #0066FF; background: #F0F4FF; }
+        .option-btn:hover { background: #1a1a1a; color: #FFFFFF; }
+        .option-btn:hover .mono { color: #FFCC00; }
 
         .nav-link {
           font-family: 'Courier New', Courier, monospace;
@@ -739,11 +739,11 @@ function App() {
           padding: 0;
           text-decoration: none;
         }
-        .nav-link:hover { color: #0066FF; }
+        .nav-link:hover { color: #1a1a1a; text-decoration: underline; }
 
         .list-item {
           padding: 16px 0;
-          border-bottom: 1px solid #F0F0F0;
+          border-bottom: 1px solid #1a1a1a;
           cursor: pointer;
           transition: padding-left 0.15s;
         }
@@ -753,7 +753,7 @@ function App() {
 
         .scenario-item {
           padding: 20px 0;
-          border-bottom: 1px solid #F0F0F0;
+          border-bottom: 1px solid #1a1a1a;
           cursor: pointer;
           transition: padding-left 0.15s;
         }
@@ -771,7 +771,7 @@ function App() {
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <h1 onClick={goHome} style={{ fontSize: 24, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.02em" }}>
+            <h1 onClick={goHome} style={{ fontSize: 32, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.02em" }}>
               Teaching Simulator
             </h1>
             <PixelCursor />
@@ -781,7 +781,7 @@ function App() {
         {/* HOME */}
         {view === "home" && (
           <div className="animate-in">
-            <p style={{ fontSize: 15, color: "#666", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
+            <p style={{ fontSize: 15, color: "#444", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
               Practice real teaching scenarios before they happen. Pick a module, make decisions, see what works and why.
             </p>
 
@@ -826,10 +826,10 @@ function App() {
               &lt;-- all modules
             </button>
 
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+            <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
               {moduleData.title}
             </h2>
-            <p style={{ fontSize: 14, color: "#666", lineHeight: 1.6, marginBottom: 32 }}>
+            <p style={{ fontSize: 14, color: "#444", lineHeight: 1.6, marginBottom: 32 }}>
               Each scenario puts you in a situation and lets you decide. No right answer on the first try — that's the point.
             </p>
 
@@ -843,7 +843,7 @@ function App() {
                   <span style={{ fontSize: 16, fontWeight: 600 }}>{sc.title}</span>
                   <span className="mono" style={{ fontSize: 11, color: "#999", flexShrink: 0, marginLeft: 16 }}>{sc.ageGroup}</span>
                 </div>
-                <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: "#666", lineHeight: 1.5 }}>
                   {sc.setup.substring(0, 100)}...
                 </p>
               </div>
@@ -859,18 +859,18 @@ function App() {
             </button>
 
             <div style={{ marginBottom: 32 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{activeScenario.title}</h2>
+              <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>{activeScenario.title}</h2>
               <span className="mono" style={{ fontSize: 12, color: "#999" }}>{activeScenario.ageGroup}</span>
             </div>
 
             {/* Path history */}
             {history.length > 0 && (
-              <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "1px solid #F0F0F0" }}>
+              <div style={{ marginBottom: 28, paddingBottom: 20, borderBottom: "1px solid #1a1a1a" }}>
                 <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 10 }}>
                   Your decisions
                 </div>
                 {history.map((h, i) => (
-                  <div key={i} style={{ fontSize: 13, color: "#888", padding: "4px 0", display: "flex", gap: 8 }}>
+                  <div key={i} style={{ fontSize: 13, color: "#666", padding: "4px 0", display: "flex", gap: 8 }}>
                     <span className="mono" style={{ color: "#CCC" }}>{String(i + 1).padStart(2, "0")}</span>
                     <span>{h}</span>
                   </div>
@@ -883,11 +883,11 @@ function App() {
 
             {/* Setup text */}
             {stepId === "step1" && (
-              <div style={{ marginBottom: 32, padding: 24, background: "#FAFAFA", border: "1px solid #EEE", borderRadius: 4 }}>
+              <div style={{ marginBottom: 32, padding: 24, background: "#FFFFFF", border: "2px solid #1a1a1a" }}>
                 <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 10 }}>
                   The situation
                 </div>
-                <p style={{ fontSize: 15, lineHeight: 1.75, color: "#333" }}>{activeScenario.setup}</p>
+                <p style={{ fontSize: 15, lineHeight: 1.75, color: "#1a1a1a" }}>{activeScenario.setup}</p>
               </div>
             )}
 
@@ -896,15 +896,15 @@ function App() {
               <div className="animate-in" style={{ marginBottom: 32 }}>
                 <div style={{
                   padding: 24,
-                  borderLeft: `4px solid ${q?.color || "#999"}`,
-                  background: "#FAFAFA",
-                  borderRadius: "0 4px 4px 0",
+                  border: "2px solid #1a1a1a",
+                  borderLeft: `6px solid ${q?.color || "#999"}`,
+                  background: "#FFFFFF",
                   marginBottom: 20,
                 }}>
                   <div className="mono" style={{ fontSize: 11, fontWeight: 500, color: q?.color || "#999", marginBottom: 12 }}>
                     {q?.label}
                   </div>
-                  <p style={{ fontSize: 15, lineHeight: 1.75, color: "#333", whiteSpace: "pre-line" }}>{step.text}</p>
+                  <p style={{ fontSize: 15, lineHeight: 1.75, color: "#1a1a1a", whiteSpace: "pre-line" }}>{step.text}</p>
                 </div>
 
                 {step.lesson && (
@@ -912,7 +912,7 @@ function App() {
                     <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#0066FF", marginBottom: 8 }}>
                       The principle
                     </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "#555", whiteSpace: "pre-line" }}>{step.lesson}</p>
+                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "#1a1a1a", whiteSpace: "pre-line" }}>{step.lesson}</p>
                   </div>
                 )}
               </div>
@@ -937,7 +937,7 @@ function App() {
 
             {/* End state */}
             {!step.prompt && step.options.length === 0 && (
-              <div style={{ paddingTop: 24, borderTop: "1px solid #EEE", marginTop: 12 }}>
+              <div style={{ paddingTop: 24, borderTop: "1px solid #1a1a1a", marginTop: 12 }}>
                 <p className="mono" style={{ fontSize: 12, color: "#999", marginBottom: 20 }}>
                   Scenario complete — {history.length + 1} decisions
                 </p>
@@ -955,7 +955,7 @@ function App() {
         )}
 
         {/* FOOTER */}
-        <footer style={{ marginTop: 80, paddingTop: 20, borderTop: "1px solid #F0F0F0" }}>
+        <footer style={{ marginTop: 80, paddingTop: 20, borderTop: "1px solid #1a1a1a" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span className="mono" style={{ fontSize: 11, color: "#CCC" }}>Cellform — Teacher Training</span>
             <div style={{ display: "flex", gap: 4 }}>
