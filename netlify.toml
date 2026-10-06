@@ -1,6 +1,9 @@
 # Skips a Netlify build unless index.html or this file changed,
 # so doc-only commits don't burn build credits.
 
+# Without a build cache Netlify sets both refs to the same commit, so the
+# diff alone would always skip. Equal refs therefore build.
+
 [build]
   publish = "."
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- index.html netlify.toml"
+  ignore = "[ \"$CACHED_COMMIT_REF\" != \"$COMMIT_REF\" ] && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- index.html netlify.toml"
